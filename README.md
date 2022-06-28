@@ -3,8 +3,8 @@ Repository for jet clustering with timing and analysis.
 
 ## Dependencies
 - ROOT
-- FastJet
-- Delphes
+- [FastJet](http://fastjet.fr/quickstart.html)
+- [Delphes](https://github.com/delphes/delphes)
 
 ## To build
 Make sure all dependencies are installed. Then

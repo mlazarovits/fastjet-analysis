@@ -24,7 +24,7 @@ make delphes-analysis
 ```
 
 ## Executables
-```fastjet-cluster.x``` takes as input (in the script) a hepMC file. Then, it runs a detector simulation on the gen particles from the hepMC file with a modular version of Delphes. After the reconstruction, the external FastJet library clusters the Delphes candidates.
+```fastjet-cluster.x``` takes as input (in the script) a hepMC file. Then, it runs a detector simulation on the gen particles from the hepMC file with a modular version of Delphes. After the reconstruction, the external FastJet library clusters the Delphes candidates. Be sure to update the card input (confReader->ReadFile(...)) to a Delphes card in your build.
 
 ```delphes-analysis.x``` analyses a ROOT file from Delphes. This script stores the jet pT, eta, phi, and mass and the number of jets in each event in a new root file.
 

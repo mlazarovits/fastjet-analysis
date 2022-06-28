@@ -1,5 +1,5 @@
 # jet-timing-analysis
-Repository for jet clustering and analysis with timing.
+Repository for jet clustering with timing and analysis.
 
 ## Dependencies
 - ROOT

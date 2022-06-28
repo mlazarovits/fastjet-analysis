@@ -7,7 +7,9 @@ Repository for jet clustering with timing and analysis.
 - [Delphes](https://github.com/delphes/delphes)
 
 ## To build
-Make sure all dependencies are installed. Then
+Make sure all dependencies are installed. Update Makefile to change ```DELPHES_DIR``` to the path to your own Delphes installation.
+
+Then
 ```
 make
 ```

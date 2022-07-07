@@ -7,10 +7,10 @@ ROOTGLIBS   = $(shell root-config --glibs)
 FJCFLAGS    = $(shell ~/fastjet-install/bin/fastjet-config --cxxflags)
 FJGLIBS     = $(shell ~/fastjet-install/bin/fastjet-config --libs)
 
-#try to link Delphes here too?
+#include Delphes include files and libraries
 DELPHES_DIR = /Users/margaretlazarovits/delphes
 DELPHES_INC = -I$(DELPHES_DIR) -I$(DELPHES_DIR)/external
-
+DELPHES_LIBS = -Wl,-rpath,$(DELPHES_DIR) -L$(DELPHES_DIR) -lDelphesNoFastJet
 
 #set c(xx)flags and libraries
 CXXFLAGS    = $(ROOTCFLAGS)
@@ -20,7 +20,6 @@ CXXFLAGS   += $(DELPHES_INC)
 GLIBS       = $(ROOTGLIBS)
 GLIBS      += $(FJGLIBS)
 
-DELPHES_LIBS = -Wl,-rpath,$(DELPHES_DIR) -L$(DELPHES_DIR) -lDelphesNoFastJet
 #specify compiler
 CXX         = g++
 

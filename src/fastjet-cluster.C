@@ -28,6 +28,8 @@
 #include <utility>
 #include <vector>
 #include <stdio.h>
+
+
 using namespace fastjet;
 using namespace std;
 
@@ -82,9 +84,9 @@ cout << "min r: " << Rmin << endl;
 
 
 
-int main(){
+int main(int argc, char *argv[]){
 	//using Delphes module with HEPMC input
-	FILE *inputFile = fopen("/Users/margaretlazarovits/fastjet-analysis/hepmcout41.dat","r");
+	FILE *inputFile = 0;//fopen("/Users/margaretlazarovits/jet-timing-analysis/hepmcout41.dat","r");
 	Delphes *d = 0;
         d = new Delphes("Delphes");
 	DelphesFactory* factory;
@@ -98,18 +100,68 @@ int main(){
 	int skipEvents = 1;
 	int maxEvents = 10;
 	Long64_t length, eventCounter;
-	//choose jet definition -- TODO: double check this with Delphes FastJet default
+	//Delphes CMS default definition
 	double R = 0.5;
-	JetDefinition jet_def(anti_kt, R);
-	cout << "Clustered with: " << jet_def.description() << endl;
+	int i;
+	stringstream message;
+	JetDefinition jet_def(antikt_algorithm, R);
 
+	TFile* oFile = new TFile("hepmc41_FJclustered.root","RECREATE","FastJet clustered jets");
+	TTree* newtree = new TTree("FastJet","FastJet jets");
+	vector<double> jet_E;
+	vector<double> jet_pt;
+	vector<double> jet_eta;
+	vector<double> jet_phi;
+	vector<double> jet_mass;
+	vector<int> jet_nConstituents;
+	int jet_size;
+
+	vector<PseudoJet> babies;
+	vector<vector<float>> baby_pt;
+	vector<vector<int>> baby_id;
+
+	newtree->Branch("Jet.E",&jet_E);
+	newtree->Branch("Jet.PT",&jet_pt);
+	newtree->Branch("Jet.eta",&jet_eta);
+	newtree->Branch("Jet.phi",&jet_phi);
+	newtree->Branch("Jet.mass",&jet_mass);
+	newtree->Branch("Jet.Babies_size",&jet_nConstituents);
+	newtree->Branch("JetBaby.pt",&baby_pt);
+	newtree->Branch("JetBaby.id",&baby_id);
+	newtree->Branch("Jet_size",&jet_size);
+
+	vector<PseudoJet> particles, jets;
+	PseudoJet particle;
+	
+	int nTotalJets = 0;
+	int id = -999;
+	int nBabies = -999;
+	int nTotalBabies = 0;
+	if(argc < 2)
+	  {
+	    cout << " Usage: ./fastjet-cluster.x" << " config_file" << " [input_file(s)]" << endl;
+	    cout << " config_file - configuration file in Tcl format," << endl;
+	    cout << " input_file(s) - input file(s) in HepMC format," << endl;
+	    cout << " with no input_file, or when input_file is -, read standard input." << endl;
+	    return 1;
+	  }
+		
 	signal(SIGINT,SignalHandler);	
-
+	cout << "Clustered with: " << jet_def.description() << endl;
 	//set .tcl card
-	confReader->ReadFile("/Users/margaretlazarovits/delphes/cards/delphes_card_CMS_NoFastJet.tcl");
-
+	confReader->ReadFile(argv[1]);
 	maxEvents = confReader->GetInt("::MaxEvents",0);
 	skipEvents = confReader->GetInt("::SkipEvents",0);
+
+	if(maxEvents < 0)
+	    {
+	      throw runtime_error("MaxEvents must be zero or positive");
+	    }
+	
+	    if(skipEvents < 0)
+	    {
+	      throw runtime_error("SkipEvents must be zero or positive");
+	    }
 
 	d->SetConfReader(confReader);
 	factory = d->GetFactory();
@@ -123,11 +175,45 @@ int main(){
 	inputIterator = inputArray->MakeIterator();
 
 	//read HepMC file
-	fseek(inputFile, 0L, SEEK_END);
-	length = ftello(inputFile);
-	fseek(inputFile, 0L, SEEK_SET);
-	if(length <= 0)
-		fclose(inputFile);
+//	fseek(inputFile, 0L, SEEK_END);
+//	length = ftello(inputFile);
+//	fseek(inputFile, 0L, SEEK_SET);
+//	if(length <= 0)
+//		fclose(inputFile);
+
+	i = 2;
+	do
+	{
+	if(interrupted) break;
+
+      if(i == argc || strncmp(argv[i], "-", 2) == 0)
+      {
+        cout << "** Reading standard input" << endl;
+        inputFile = stdin;
+        length = -1;
+      }
+      else
+      {
+        cout << "** Reading " << argv[i] << endl;
+        inputFile = fopen(argv[i], "r");
+
+        if(inputFile == NULL)
+        {
+          message << "can't open " << argv[i];
+          throw runtime_error(message.str());
+        }
+
+        fseek(inputFile, 0L, SEEK_END);
+        length = ftello(inputFile);
+        fseek(inputFile, 0L, SEEK_SET);
+
+        if(length <= 0)
+        {
+          fclose(inputFile);
+          ++i;
+          continue;
+        }
+      }
 
 
 
@@ -135,29 +221,6 @@ int main(){
 
 	//declare variables in new root inputFile
 	
-	TFile* oFile = new TFile("hepmc41_FJclustered.root","RECREATE","FastJet clustered jets");
-	TTree* newtree = new TTree("FastJet","FastJet jets");
-	vector<double> jet_E;
-	vector<double> jet_pt;
-	vector<double> jet_eta;
-	vector<double> jet_phi;
-	vector<double> jet_mass;
-	vector<double> jet_theta;
-	int jet_size;
-	newtree->Branch("Jet.E",&jet_E);
-	newtree->Branch("Jet.PT",&jet_pt);
-	newtree->Branch("Jet.eta",&jet_eta);
-	newtree->Branch("Jet.phi",&jet_phi);
-	newtree->Branch("Jet.theta",&jet_theta);
-	newtree->Branch("Jet.mass",&jet_mass);
-	newtree->Branch("Jet_size",&jet_size);
-	
-	vector<PseudoJet> particles, jets;
-	PseudoJet jet;
-	int nParticles;
-	vector<pair<double,double>> etaPhi;
-	vector<TLorentzVector> fourvecs;
-
 	//loop over all objects
 	d->Clear();
 	reader->Clear();
@@ -177,32 +240,73 @@ int main(){
 				//pass delphes candidates to fastjet for clustering
 				while((candidate = static_cast<Candidate*>(inputIterator->Next()))){
 					momentum = candidate->Momentum;
-					jet = PseudoJet(momentum.Px(),momentum.Py(),momentum.Pz(),momentum.E());
-					particles.push_back(jet);
+					//only include stable, final state particles
+					if(candidate->Status != 1) continue;
+					id = candidate->PID;
+					particle = PseudoJet(momentum.Px(),momentum.Py(),momentum.Pz(),momentum.E());
+					particle.set_user_index(id);
+					particles.push_back(particle);
 				}
 				//run clusering
 				ClusterSequence cs(particles,jet_def);
 				jets.clear();
 				jets = sorted_by_pt(cs.inclusive_jets(0.0));
+				
+				//cleaning cuts
+				//min pT = 20 (delphes default)
+				Selector ptSelector = SelectorPtMin(20.);
+				jets = ptSelector(jets);
+				//eta cut
+				//Selector etaSelector = SelectorAbsEtaMax(5.0);
+				
 				//fill new ttree with clustered jets
 				jet_size = jets.size();
-cout << "event #: " << eventCounter << " # jets: " << jet_size << " # particles: " << particles.size() << endl;
 				for(int j = 0; j < jet_size; j++){
-					jet_E.push_back(jets[j].E());
-					//vector<double> jet_pt;
-					//vector<double> jet_eta;
-					//vector<double> jet_phi;
-					//vector<double> jet_mass;
-					//vector<double> jet_theta;
+					++nTotalJets;
+					nBabies = jets[j].constituents().size();
+					jet_nConstituents.push_back(nBabies);
+					babies = jets[j].constituents();
+					vector<float> tmp_baby_pt;
+					vector<int> tmp_baby_id;
+					nTotalBabies = nTotalBabies + nBabies;
 
+					//loop throught jet constituents (babies)
+					for(int c = 0; c < nBabies; c++){
+						tmp_baby_pt.push_back(babies[c].pt());
+						tmp_baby_id.push_back(babies[c].user_index());
+					}
+					cout << "jet # " << nTotalJets << " PT: " << jets[j].pt() << endl;
+					jet_E.push_back(jets[j].E());
+					jet_pt.push_back(jets[j].pt());
+					jet_eta.push_back(jets[j].eta());
+					jet_phi.push_back(jets[j].phi());
+					jet_mass.push_back(jets[j].m());
+					baby_pt.push_back(tmp_baby_pt);
+					baby_id.push_back(tmp_baby_id);
+
+					babies.clear();
 				}
 				newtree->Fill();		
+				jet_nConstituents.clear();
+				jet_E.clear();
+				jet_pt.clear();
+				jet_eta.clear();
+				jet_phi.clear();
+				jet_mass.clear();
+				baby_pt.clear();
+				baby_id.clear();
 			}
 			d->Clear();
 			reader->Clear();
 		}
 	}
-	fclose(inputFile);
+	if(inputFile != stdin) fclose(inputFile);
+
+      ++i;
+	}
+	while(i < argc);
+		cout << "total jets: " << nTotalJets << endl;
+		cout << "total babies: " << nTotalBabies << endl;
 	d->FinishTask();
 
 	oFile->cd();

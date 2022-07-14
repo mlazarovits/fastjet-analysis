@@ -10,7 +10,8 @@ FJGLIBS     = $(shell ~/fastjet-install/bin/fastjet-config --libs)
 #include Delphes include files and libraries
 DELPHES_DIR = /Users/margaretlazarovits/delphes
 DELPHES_INC = -I$(DELPHES_DIR) -I$(DELPHES_DIR)/external
-DELPHES_LIBS = -Wl,-rpath,$(DELPHES_DIR) -L$(DELPHES_DIR) -lDelphesNoFastJet
+DELPHES_LIBS_NOFJ = -Wl,-rpath,$(DELPHES_DIR) -L$(DELPHES_DIR) -lDelphesNoFastJet
+DELPHES_LIBS = -Wl,-rpath,$(DELPHES_DIR) -L$(DELPHES_DIR) -lDelphes
 
 #set c(xx)flags and libraries
 CXXFLAGS    = $(ROOTCFLAGS)
@@ -19,7 +20,6 @@ CXXFLAGS   += $(DELPHES_INC)
 
 GLIBS       = $(ROOTGLIBS)
 GLIBS      += $(FJGLIBS)
-
 #specify compiler
 CXX         = g++
 
@@ -49,11 +49,11 @@ short-example.x: $(SRCDIR)short-example.C $(OBJ_FILES) $(HH_FILES)
 	touch short-example.x
 
 fastjet-cluster.x: $(SRCDIR)fastjet-cluster.C $(OBJ_FILES) $(HH_FILES)
-	$(CXX) $(CXXFLAGS) -o fastjet-cluster.x $(OUTOBJ)/*.o $(GLIBS) $(DELPHES_LIBS) $ $<
+	$(CXX) $(CXXFLAGS) -o fastjet-cluster.x $(OUTOBJ)/*.o $(GLIBS) $(DELPHES_LIBS_NOFJ) $ $<
 	touch fastjet-cluster.x
 	
 delphes-analysis.x: $(SRCDIR)delphes-analysis.C $(OBJ_FILES) $(HH_FILES)
-	$(CXX) $(CXXFLAGS) -o delphes-analysis.x $(OUTOBJ)/*.o $(GLIBS) $ $<
+	$(CXX) $(CXXFLAGS) -o delphes-analysis.x $(OUTOBJ)/*.o $(GLIBS) $(DELPHES_LIBS) $ $<
 	touch delphes-analysis.x
 #where to put object files
 $(OUTOBJ)%.o: src/%.cc include/%.hh

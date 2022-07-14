@@ -1,15 +1,17 @@
-#include "include/Delphes.hh"
-//#include "modules/Delphes.h"
+//#include "include/Delphes.hh"
+#include "external/ExRootAnalysis/ExRootTreeReader.h"
+#include "classes/DelphesClasses.h"
 #include "fastjet/ClusterSequence.hh"
+#include "TClonesArray.h"
 #include <TLorentzVector.h>
 #include <TTree.h>
 #include <TFile.h>
 #include <utility>
 #include <vector>
 #include <iostream>
+
 using namespace fastjet;
 using namespace std;
-
 //forward declarations of helper functions
 //particle = pair(eta,phi)
 double Rsq(pair<double,double> particle1, pair<double,double> particle2){
@@ -55,16 +57,24 @@ cout << "min r: " << Rmin << endl;
 
 
 int main(){
-	TFile* f = TFile::Open("/Users/margaretlazarovits/delphes/hepMC41.root");
-	//can turn off all other branches except for Particle_* branches in Delphes header
-	// using Delphes root MakeClass
-	TTree* tree = (TTree*)f->Get("Delphes");
-	Delphes* d = new Delphes(tree);
-	int nEntries = d->fChain->GetEntries();	
+//	TFile* f = TFile::Open("/Users/margaretlazarovits/delphes/hepmc41.root");
+//	//can turn off all other branches except for Particle_* branches in Delphes header
+//	// using Delphes root MakeClass
+//	TTree* tree = (TTree*)f->Get("Delphes");
+//	Delphes* d = new Delphes(tree);
+	TChain* chain = new TChain("Delphes");
+	string file = "/Users/margaretlazarovits/delphes/hepmc41.root";
+	chain->Add(file.c_str());
+	int idx1 = file.find_last_of("/");
+	int idx2 = file.find(".root");
+	string ofile = file.substr(idx1+1,idx2-idx1-1)+"_delphesAnalysisOut.root"; 
+	
+	ExRootTreeReader* treeReader = new ExRootTreeReader(chain);
+
 
 	//declare variables in new root file
 	/*
-	TFile* newfile = new TFile("weakbosons_fastJet.root","RECREATE","FastJet clustered jets");
+	TFile* newfile = new TFile(ofile.c_str(),"RECREATE","FastJet clustered jets");
 	TTree* newtree = new TTree("FastJet","FastJet jets");
 	vector<double> jet_E;
 	vector<double> jet_pt;
@@ -82,32 +92,51 @@ int main(){
 	newtree->Branch("Jet.mass",&jet_mass);
 	newtree->Branch("Jet_size",&jet_size);
 	*/
+	//declare read variables
+	TClonesArray* branchJet = treeReader->UseBranch("Jet");
+	TClonesArray* branchGenJet = treeReader->UseBranch("GenJet");
+	TClonesArray* branchParticle = treeReader->UseBranch("Particle");
+	int nEntries = treeReader->GetEntries();	
+	Jet* delphesJet;
+	GenParticle* particle;
+	TLorentzVector momentum;
+
+
+	//declare jet clustering variables
 	vector<PseudoJet> particles, jets;
 	PseudoJet jet;
+	double R = 0.5;
+	JetDefinition jet_def(antikt_algorithm,R);
 	int nParticles;
-	int nJets;
+	int nJets = 0;
+	int nJets_Delphes = 0;
+	int nGenJets_Delphes = 0;
 	int SKIP = 1;
-	vector<pair<double,double>> etaPhi;
-	vector<TLorentzVector> fourvecs;
+	int id;
+	PseudoJet jetBaby;
 
 	//loop over all objects
-	//loop through entries and store Particles as pseudojet 4-vectors
-	//make sure the pseudojets are getting filled with the right "particles"
-	for(int i = 0; i < nEntries; i+=SKIP){
-		d->GetEntry(i);
-		nJets = d->Jet_size;
-		if(nJets < 1) continue;
-	//	nParticles = d->Particle_size;
-		cout << "event #" << i << " jet size: " << nJets << endl;
-		for(int j = 0; j < nJets; j++){
-		//cout << "jet #	pt	eta	phi	mass" << endl;	
-			float pt = d->Jet_PT[j];
-			float eta = d->Jet_Eta[j];
-			float phi = d->Jet_Phi[j];
-			float mass = d->Jet_Mass[j];
-		//	cout << j << "	" << Form("%.1f",pt) << "	" << Form("%.1f",eta) << "	" << Form("%.1f",phi) << "	" << Form("%.1f",mass) << endl;
+	//loop through entries and store GenParticles as pseudojet 4-vectors
+	for(int i = 0; i < nEntries; i++){
+		treeReader->ReadEntry(i);
+		cout << "event #" << i << endl;
+		particles.clear();
+		for(int p = 0; p < branchParticle->GetEntriesFast(); p++){
+			//cluster only final state particles
+			particle = (GenParticle*)branchParticle->At(p);
+			if(particle->Status != 1) continue;
+			id = particle->PID;
+			//cluster only visible particles
+			if(fabs(id) == 12 || fabs(id) == 14 || fabs(id) == 16 || fabs(id) == 18) continue;
+			jetBaby = PseudoJet(particle->Px,particle->Py,particle->Pz,particle->E);
+			particles.push_back(jetBaby);
 		}
-
+		ClusterSequence cs(particles, jet_def);
+		jets.clear();
+		jets = sorted_by_pt(cs.inclusive_jets(20.0));
+		cout << "delphes reco jet size: " << branchJet->GetEntriesFast() << endl;
+		cout << "delphes gen jet size: " << branchGenJet->GetEntriesFast() << endl;
+		cout << "FJ clustered jet size: " << jets.size() << endl;	
 //		newtree->Fill();
 		
 	}

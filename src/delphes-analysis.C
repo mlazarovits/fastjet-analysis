@@ -57,11 +57,6 @@ cout << "min r: " << Rmin << endl;
 
 
 int main(){
-//	TFile* f = TFile::Open("/Users/margaretlazarovits/delphes/hepmc41.root");
-//	//can turn off all other branches except for Particle_* branches in Delphes header
-//	// using Delphes root MakeClass
-//	TTree* tree = (TTree*)f->Get("Delphes");
-//	Delphes* d = new Delphes(tree);
 	TChain* chain = new TChain("Delphes");
 	string file = "/Users/margaretlazarovits/delphes/hepmc41.root";
 	chain->Add(file.c_str());
@@ -114,13 +109,15 @@ int main(){
 	int SKIP = 1;
 	int id;
 	PseudoJet jetBaby;
-
+	int nTotParticles = 0;
+	int particlenum;
 	//loop over all objects
 	//loop through entries and store GenParticles as pseudojet 4-vectors
 	for(int i = 0; i < nEntries; i++){
 		treeReader->ReadEntry(i);
-		cout << "event #" << i << endl;
+		//cout << "event #" << i << endl;
 		particles.clear();
+		particlenum = 0;
 		for(int p = 0; p < branchParticle->GetEntriesFast(); p++){
 			//cluster only final state particles
 			particle = (GenParticle*)branchParticle->At(p);
@@ -128,18 +125,21 @@ int main(){
 			id = particle->PID;
 			//cluster only visible particles
 			if(fabs(id) == 12 || fabs(id) == 14 || fabs(id) == 16 || fabs(id) == 18) continue;
+			nTotParticles++;
 			jetBaby = PseudoJet(particle->Px,particle->Py,particle->Pz,particle->E);
 			particles.push_back(jetBaby);
+			particlenum++;
 		}
 		ClusterSequence cs(particles, jet_def);
 		jets.clear();
 		jets = sorted_by_pt(cs.inclusive_jets(20.0));
-		cout << "delphes reco jet size: " << branchJet->GetEntriesFast() << endl;
-		cout << "delphes gen jet size: " << branchGenJet->GetEntriesFast() << endl;
-		cout << "FJ clustered jet size: " << jets.size() << endl;	
+		//cout << "delphes reco jet size: " << branchJet->GetEntriesFast() << endl;
+		//cout << "delphes gen jet size: " << branchGenJet->GetEntriesFast() << endl;
+		//cout << "FJ clustered jet size: " << jets.size() << endl;	
 //		newtree->Fill();
 		
 	}
+	cout << "total particles: " << nTotParticles << endl;
 //	f->Close();
 //	newfile->cd();
 //	newtree->Write();

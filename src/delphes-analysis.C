@@ -56,9 +56,16 @@ cout << "min r: " << Rmin << endl;
 
 
 
-int main(){
+int main(int argc, char *argv[]){
+
+	if(argc < 2){
+		cout << " Usage: ./delphes-analysis.x [root file]" << endl;
+		cout << " root file - delphes output" << endl;
+		return 1;
+	}
+
 	TChain* chain = new TChain("Delphes");
-	string file = "/Users/margaretlazarovits/delphes/hepmc41.root";
+	string file = string(argv[1]);
 	chain->Add(file.c_str());
 	int idx1 = file.find_last_of("/");
 	int idx2 = file.find(".root");
@@ -133,6 +140,7 @@ int main(){
 		ClusterSequence cs(particles, jet_def);
 		jets.clear();
 		jets = sorted_by_pt(cs.inclusive_jets(20.0));
+		nJets += jets.size();
 		//cout << "delphes reco jet size: " << branchJet->GetEntriesFast() << endl;
 		//cout << "delphes gen jet size: " << branchGenJet->GetEntriesFast() << endl;
 		//cout << "FJ clustered jet size: " << jets.size() << endl;	
@@ -140,6 +148,7 @@ int main(){
 		
 	}
 	cout << "total particles: " << nTotParticles << endl;
+	cout << "total jets: " << nJets << endl;
 //	f->Close();
 //	newfile->cd();
 //	newtree->Write();

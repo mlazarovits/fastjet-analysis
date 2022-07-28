@@ -109,22 +109,14 @@ int main(int argc, char *argv[]){
 	PseudoJet jet;
 	double R = 0.5;
 	JetDefinition jet_def(antikt_algorithm,R);
-	int nParticles;
-	int nJets = 0;
-	int nJets_Delphes = 0;
-	int nGenJets_Delphes = 0;
 	int SKIP = 1;
 	int id;
 	PseudoJet jetBaby;
-	int nTotParticles = 0;
-	int particlenum;
 	//loop over all objects
 	//loop through entries and store GenParticles as pseudojet 4-vectors
 	for(int i = 0; i < nEntries; i++){
 		treeReader->ReadEntry(i);
-		//cout << "event #" << i << endl;
 		particles.clear();
-		particlenum = 0;
 		for(int p = 0; p < branchParticle->GetEntriesFast(); p++){
 			//cluster only final state particles
 			particle = (GenParticle*)branchParticle->At(p);
@@ -132,23 +124,16 @@ int main(int argc, char *argv[]){
 			id = particle->PID;
 			//cluster only visible particles
 			if(fabs(id) == 12 || fabs(id) == 14 || fabs(id) == 16 || fabs(id) == 18) continue;
-			nTotParticles++;
 			jetBaby = PseudoJet(particle->Px,particle->Py,particle->Pz,particle->E);
 			particles.push_back(jetBaby);
-			particlenum++;
 		}
 		ClusterSequence cs(particles, jet_def);
 		jets.clear();
 		jets = sorted_by_pt(cs.inclusive_jets(20.0));
 		nJets += jets.size();
-		//cout << "delphes reco jet size: " << branchJet->GetEntriesFast() << endl;
-		//cout << "delphes gen jet size: " << branchGenJet->GetEntriesFast() << endl;
-		//cout << "FJ clustered jet size: " << jets.size() << endl;	
 //		newtree->Fill();
 		
 	}
-	cout << "total particles: " << nTotParticles << endl;
-	cout << "total jets: " << nJets << endl;
 //	f->Close();
 //	newfile->cd();
 //	newtree->Write();

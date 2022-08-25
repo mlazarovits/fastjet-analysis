@@ -12,49 +12,6 @@
 
 using namespace fastjet;
 using namespace std;
-//forward declarations of helper functions
-//particle = pair(eta,phi)
-double Rsq(pair<double,double> particle1, pair<double,double> particle2){
-	return pow((particle1.first-particle2.first),2) + pow((particle1.second-particle2.second),2);
-}
-
-//takes a vector of doubles <eta,phi> for particles in an event/jet
-//void AachenCluster(vector<pair<double,double>> particles){
-vector<TLorentzVector> AachenCluster(vector<TLorentzVector> particles){
-	int nParticles = particles.size();
-	double R0 = 1.;
-	double Rmin = 999.;
-	double Rmax = 0.;
-	double R;
-	//stores pairs of particles based on increasing Rsq
-	vector<map<pair<int,int>,double>> idxs;
-	pair<int,int> min_idxs;
-	TLorentzVector newjet;
-//	while(Rmin > R0){
-//	loop through all pseudojets to find the smallest R2 (Rmin)
-		for(int i = 0; i < nParticles; i++){
-			for(int j = 0; j < nParticles; j++){
-				if(i >= j) continue;
-				R = particles[i].DeltaR(particles[j]);
-	//			idxs[make_pair(i,j)] = R2;
-				if(R*R < Rmin){ Rmin = R*R; min_idxs = make_pair(j,i);}
-				cout << i << " " << j << " " << R*R << " " << Rmin << endl;	
-			}
-		}
-		//cluster the particles with the smallest R2 (Rmin)
-		newjet = particles[min_idxs.first] + particles[min_idxs.second];
-	 	particles.erase(particles.begin()+min_idxs.first); particles.erase(particles.begin()+min_idxs.second);
-		particles.push_back(newjet);
-cout << "min r: " << Rmin << endl;
-//cout << "new jet eta, phi: " << newjet.Eta() << " " << newjet.Phi() << endl;
-		//if pseudojet Rmin is below R0, keep clustering
-		if(Rmin < R0) return AachenCluster(particles);
-		//otherwise return the pseudoparticles
-		else return particles;
-//	}
-}
-
-
 
 int main(int argc, char *argv[]){
 
@@ -107,14 +64,15 @@ int main(int argc, char *argv[]){
 	//declare jet clustering variables
 	vector<PseudoJet> particles, jets;
 	PseudoJet jet;
-	double R = 0.5;
-	JetDefinition jet_def(antikt_algorithm,R);
+	double R = 0.4;
+	JetDefinition jet_def(cambridge_algorithm,R);
 	int SKIP = 1;
 	int id;
 	PseudoJet jetBaby;
 	//loop over all objects
 	//loop through entries and store GenParticles as pseudojet 4-vectors
 	for(int i = 0; i < nEntries; i++){
+		if(i > 0) break;
 		treeReader->ReadEntry(i);
 		particles.clear();
 		for(int p = 0; p < branchParticle->GetEntriesFast(); p++){
@@ -128,9 +86,11 @@ int main(int argc, char *argv[]){
 			particles.push_back(jetBaby);
 		}
 		ClusterSequence cs(particles, jet_def);
+		cout << "Njets clustered: " << jets.size() << endl;
 		jets.clear();
 		jets = sorted_by_pt(cs.inclusive_jets(20.0));
-		nJets += jets.size();
+		cout << "Njets pt cut: " << jets.size() << endl;
+		cout << "Njets delphes: " << branchGenJet->GetEntriesFast() << endl;
 //		newtree->Fill();
 		
 	}

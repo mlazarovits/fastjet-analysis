@@ -64,7 +64,7 @@ int main(int argc, char *argv[]){
 	//declare jet clustering variables
 	vector<PseudoJet> particles, jets;
 	PseudoJet jet;
-	double R = 0.4;
+	double R = 0.5;
 	JetDefinition jet_def(cambridge_algorithm,R);
 	int SKIP = 1;
 	int id;
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]){
 			if(particle->Status != 1) continue;
 			id = particle->PID;
 			//cluster only visible particles
-			if(fabs(id) == 12 || fabs(id) == 14 || fabs(id) == 16 || fabs(id) == 18) continue;
+			if(fabs(id) == 12 || fabs(id) == 14 || fabs(id) == 16) continue;
 			jetBaby = PseudoJet(particle->Px,particle->Py,particle->Pz,particle->E);
 			particles.push_back(jetBaby);
 		}
